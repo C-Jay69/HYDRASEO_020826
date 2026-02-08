@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the HYDRASEO backend API endpoints for authentication, articles, AI services, templates, analytics, and pricing functionality"
+user_problem_statement: "Test the HYDRASEO website frontend user flows including landing page, registration, onboarding, dashboard, article creation, navigation, and logout functionality"
 
 backend:
   - task: "Authentication System"
