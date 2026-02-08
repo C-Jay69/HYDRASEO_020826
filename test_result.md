@@ -281,7 +281,14 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Landing Page Components"
+    - "Registration Flow"
+    - "Onboarding Flow"
+    - "Dashboard Functionality"
+    - "New Article Creation"
+    - "Navigation System"
+    - "Logout Functionality"
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
@@ -289,3 +296,5 @@ test_plan:
 agent_communication:
     - agent: "testing"
       message: "Comprehensive backend API testing completed successfully. All 13 test cases passed with 100% success rate. Authentication, articles, AI services, templates, analytics, and pricing endpoints are fully functional. Security measures are properly implemented. Backend is ready for production use."
+    - agent: "testing"
+      message: "Starting comprehensive frontend testing of HYDRASEO website user flows. Will test landing page, registration, onboarding, dashboard, article creation, navigation, and logout functionality using Playwright automation."
