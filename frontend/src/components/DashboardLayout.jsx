@@ -76,11 +76,12 @@ const DashboardLayout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 lg:h-20 flex items-center px-6 border-b border-gray-800">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <Droplet className="w-7 h-7 text-cyan-400" />
-              <span className="font-bold text-xl bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                HYDRASEO
-              </span>
+            <Link to="/dashboard" className="flex items-center">
+              <img 
+                src="https://customer-assets.emergentagent.com/job_seocopy-platform/artifacts/80n7a5ir_HYDRASEO_LOGO_TRANSPARENT_resized.jpg" 
+                alt="HYDRASEO Logo" 
+                className="h-10 w-auto object-contain"
+              />
             </Link>
           </div>
 
