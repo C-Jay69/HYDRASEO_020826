@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { navLinks } from '../data/mock';
 import { Button } from './ui/button';
-import { Menu, X, Droplet } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
