@@ -9,14 +9,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* Brand Column */}
           <div className="lg:col-span-1">
-            <a href="/" className="flex items-center gap-2 mb-6 group">
-              <div className="relative">
-                <Droplet className="w-8 h-8 text-cyan-400 transition-transform group-hover:scale-110" />
-                <div className="absolute inset-0 bg-cyan-400/20 blur-xl rounded-full" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                HYDRASEO
-              </span>
+            <a href="/" className="flex items-center mb-6 group">
+              <img 
+                src="https://customer-assets.emergentagent.com/job_seocopy-platform/artifacts/80n7a5ir_HYDRASEO_LOGO_TRANSPARENT_resized.jpg" 
+                alt="HYDRASEO Logo" 
+                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </a>
             <p className="text-gray-500 text-sm mb-6">
               AI-powered SEO writing tool for creating optimized content that ranks on Google and AI search engines.
