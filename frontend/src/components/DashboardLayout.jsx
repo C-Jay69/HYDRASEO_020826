@@ -53,11 +53,12 @@ const DashboardLayout = ({ children }) => {
     <div className="min-h-screen bg-black">
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-lg border-b border-gray-800 px-4 h-16 flex items-center justify-between">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <Droplet className="w-6 h-6 text-cyan-400" />
-          <span className="font-bold text-lg bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-            HYDRASEO
-          </span>
+        <Link to="/dashboard" className="flex items-center">
+          <img 
+            src="https://customer-assets.emergentagent.com/job_seocopy-platform/artifacts/80n7a5ir_HYDRASEO_LOGO_TRANSPARENT_resized.jpg" 
+            alt="HYDRASEO Logo" 
+            className="h-8 w-auto object-contain"
+          />
         </Link>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
