@@ -27,13 +27,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <Droplet className="w-8 h-8 text-cyan-400 transition-transform group-hover:scale-110" />
-              <div className="absolute inset-0 bg-cyan-400/20 blur-xl rounded-full" />
-            </div>
-            <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              HYDRASEO
-            </span>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_seocopy-platform/artifacts/80n7a5ir_HYDRASEO_LOGO_TRANSPARENT_resized.jpg" 
+              alt="HYDRASEO Logo" 
+              className="h-10 lg:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </a>
 
           {/* Desktop Navigation */}
