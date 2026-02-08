@@ -282,14 +282,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Landing Page Components"
     - "Registration Flow"
-    - "Onboarding Flow"
-    - "Dashboard Functionality"
-    - "New Article Creation"
-    - "Navigation System"
-    - "Logout Functionality"
-  stuck_tasks: []
+    - "Authentication System"
+  stuck_tasks:
+    - "Registration Flow"
+    - "Authentication System"
   test_all: true
   test_priority: "high_first"
 
@@ -298,3 +295,5 @@ agent_communication:
       message: "Comprehensive backend API testing completed successfully. All 13 test cases passed with 100% success rate. Authentication, articles, AI services, templates, analytics, and pricing endpoints are fully functional. Security measures are properly implemented. Backend is ready for production use."
     - agent: "testing"
       message: "Starting comprehensive frontend testing of HYDRASEO website user flows. Will test landing page, registration, onboarding, dashboard, article creation, navigation, and logout functionality using Playwright automation."
+    - agent: "testing"
+      message: "CRITICAL ISSUE FOUND: Frontend testing reveals authentication system failure. Registration API (/api/auth/register) returning 400 error preventing user registration and access to protected features. Landing page, navigation, and mobile responsiveness working correctly. Protected routes properly redirect to login. Backend API accessible for public endpoints. Issue isolated to registration endpoint specifically."
