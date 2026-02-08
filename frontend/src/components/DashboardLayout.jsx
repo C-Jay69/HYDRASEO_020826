@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import {
-  Droplet, LayoutDashboard, FileText, Search, Target, Wand2,
+  LayoutDashboard, FileText, Search, Target, Wand2,
   BookTemplate, Calendar, Settings, LogOut, Menu, X,
   Sun, Moon, Monitor, ChevronDown, CreditCard, Plus, User
 } from 'lucide-react';
