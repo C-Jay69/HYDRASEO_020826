@@ -1,6 +1,6 @@
 import React from 'react';
 import { footerLinks } from '../data/mock';
-import { Droplet, Mail, Twitter, Linkedin, Youtube, Github } from 'lucide-react';
+import { Mail, Twitter, Linkedin, Youtube, Github } from 'lucide-react';
 
 const Footer = () => {
   return (
