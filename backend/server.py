@@ -42,6 +42,13 @@ ai_router = APIRouter(prefix="/api/ai", tags=["AI Services"])
 templates_router = APIRouter(prefix="/api/templates", tags=["Templates"])
 analytics_router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 calendar_router = APIRouter(prefix="/api/calendar", tags=["Calendar"])
+admin_router = APIRouter(prefix="/api/admin", tags=["Admin"])
+
+# Admin credentials - CHANGE THESE IN PRODUCTION!
+ADMIN_CREDENTIALS = {
+    "email": "admin@hydraseo.com",
+    "password": "HydraAdmin2025!"
+}
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
