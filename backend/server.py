@@ -495,6 +495,223 @@ async def root():
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
+# ==================== ADMIN ROUTES ====================
+
+@admin_router.post("/login")
+async def admin_login(credentials: UserLogin):
+    """Admin login with special credentials"""
+    if credentials.email != ADMIN_CREDENTIALS["email"] or credentials.password != ADMIN_CREDENTIALS["password"]:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    
+    token = create_access_token({"sub": "admin", "email": credentials.email, "is_admin": True})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": "admin",
+            "email": ADMIN_CREDENTIALS["email"],
+            "name": "Administrator",
+            "role": "admin",
+            "is_admin": True
+        }
+    }
+
+async def get_admin_user(current_user: dict = Depends(get_current_user)):
+    """Verify admin access"""
+    if current_user.get("sub") != "admin" and not current_user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+@admin_router.get("/dashboard")
+async def admin_dashboard(admin: dict = Depends(get_admin_user)):
+    """Get admin dashboard analytics"""
+    # Total users
+    total_users = await db.users.count_documents({})
+    
+    # Users by role
+    users_by_role = {}
+    for role in ["free", "solo", "pro", "agency", "unlimited"]:
+        count = await db.users.count_documents({"role": role})
+        users_by_role[role] = count
+    
+    # Total articles
+    total_articles = await db.articles.count_documents({})
+    
+    # Articles by status
+    articles_by_status = {}
+    for status in ["draft", "published", "scheduled", "generating"]:
+        count = await db.articles.count_documents({"status": status})
+        articles_by_status[status] = count
+    
+    # Recent users (last 7 days)
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    new_users_week = await db.users.count_documents({"created_at": {"$gte": week_ago}})
+    
+    # Total words generated
+    pipeline = [{"$group": {"_id": None, "total": {"$sum": "$word_count"}}}]
+    result = await db.articles.aggregate(pipeline).to_list(1)
+    total_words = result[0]["total"] if result else 0
+    
+    # Recent activity
+    recent_articles = await db.articles.find().sort("created_at", -1).limit(10).to_list(10)
+    recent_users = await db.users.find().sort("created_at", -1).limit(10).to_list(10)
+    
+    return {
+        "total_users": total_users,
+        "users_by_role": users_by_role,
+        "new_users_week": new_users_week,
+        "total_articles": total_articles,
+        "articles_by_status": articles_by_status,
+        "total_words": total_words,
+        "recent_articles": [
+            {"id": a["id"], "title": a["title"], "status": a["status"], "user_id": a["user_id"], "created_at": a["created_at"]}
+            for a in recent_articles
+        ],
+        "recent_users": [
+            {"id": u["id"], "name": u["name"], "email": u["email"], "role": u["role"], "created_at": u["created_at"]}
+            for u in recent_users
+        ]
+    }
+
+@admin_router.get("/users")
+async def admin_get_users(
+    skip: int = 0,
+    limit: int = 50,
+    role: Optional[str] = None,
+    search: Optional[str] = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Get all users with filtering"""
+    query = {}
+    if role:
+        query["role"] = role
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    
+    users = await db.users.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.users.count_documents(query)
+    
+    return {
+        "users": [
+            {
+                "id": u["id"],
+                "name": u["name"],
+                "email": u["email"],
+                "role": u["role"],
+                "credits_used": u.get("credits_used", 0),
+                "credits_limit": u.get("credits_limit", 5),
+                "created_at": u["created_at"]
+            }
+            for u in users
+        ],
+        "total": total
+    }
+
+@admin_router.put("/users/{user_id}")
+async def admin_update_user(
+    user_id: str,
+    role: Optional[str] = None,
+    credits_limit: Optional[int] = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Update user role or credits"""
+    update_data = {"updated_at": datetime.utcnow()}
+    if role:
+        update_data["role"] = role
+        # Set credits based on role
+        credits_map = {"free": 5, "solo": 40, "pro": 300, "agency": 800, "unlimited": 999999}
+        update_data["credits_limit"] = credits_map.get(role, 5)
+    if credits_limit is not None:
+        update_data["credits_limit"] = credits_limit
+    
+    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User updated successfully"}
+
+@admin_router.delete("/users/{user_id}")
+async def admin_delete_user(user_id: str, admin: dict = Depends(get_admin_user)):
+    """Delete a user and their articles"""
+    # Delete user's articles
+    await db.articles.delete_many({"user_id": user_id})
+    # Delete user
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User and their articles deleted"}
+
+@admin_router.get("/articles")
+async def admin_get_articles(
+    skip: int = 0,
+    limit: int = 50,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Get all articles with filtering"""
+    query = {}
+    if status:
+        query["status"] = status
+    if search:
+        query["title"] = {"$regex": search, "$options": "i"}
+    
+    articles = await db.articles.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.articles.count_documents(query)
+    
+    return {
+        "articles": [
+            {
+                "id": a["id"],
+                "title": a["title"],
+                "status": a["status"],
+                "user_id": a["user_id"],
+                "word_count": a.get("word_count", 0),
+                "seo_score": a.get("seo_score", 0),
+                "created_at": a["created_at"]
+            }
+            for a in articles
+        ],
+        "total": total
+    }
+
+@admin_router.delete("/articles/{article_id}")
+async def admin_delete_article(article_id: str, admin: dict = Depends(get_admin_user)):
+    """Delete any article"""
+    result = await db.articles.delete_one({"id": article_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    return {"message": "Article deleted"}
+
+@admin_router.get("/stats/daily")
+async def admin_daily_stats(days: int = 30, admin: dict = Depends(get_admin_user)):
+    """Get daily statistics for charts"""
+    stats = []
+    for i in range(days):
+        date = datetime.utcnow() - timedelta(days=i)
+        start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = start_of_day + timedelta(days=1)
+        
+        users_count = await db.users.count_documents({
+            "created_at": {"$gte": start_of_day, "$lt": end_of_day}
+        })
+        articles_count = await db.articles.count_documents({
+            "created_at": {"$gte": start_of_day, "$lt": end_of_day}
+        })
+        
+        stats.append({
+            "date": start_of_day.isoformat(),
+            "users": users_count,
+            "articles": articles_count
+        })
+    
+    return {"stats": list(reversed(stats))}
+
 # ==================== PRICING ROUTES ====================
 
 @api_router.get("/pricing")
