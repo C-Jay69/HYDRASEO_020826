@@ -1,27 +1,19 @@
 import os
-import uuid
 import re
-from typing import List, Optional
+from typing import List
 from dotenv import load_dotenv
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 from models import ContentTone, KeywordResult, CompetitorResult
 
 load_dotenv()
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
+# Configure Gemini with your API key
+GOOGLE_GEMINI_API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY")
+genai.configure(api_key=GOOGLE_GEMINI_API_KEY)
 
 class AIService:
     def __init__(self):
-        self.api_key = EMERGENT_LLM_KEY
-    
-    def _create_chat(self, system_message: str) -> LlmChat:
-        chat = LlmChat(
-            api_key=self.api_key,
-            session_id=str(uuid.uuid4()),
-            system_message=system_message
-        )
-        chat.with_model("openai", "gpt-5.2")
-        return chat
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     async def generate_article(self, 
                                title: str, 
@@ -49,7 +41,7 @@ class AIService:
         - Add rhetorical questions to engage readers
         """ if fun_mode else ""
         
-        system_message = f"""
+        prompt = f"""
         You are HYDRASEO, an expert SEO content writer. Create comprehensive, SEO-optimized articles that rank well on Google and get cited by AI search engines like ChatGPT, Perplexity, and Google AI.
         
         Writing Guidelines:
@@ -62,12 +54,6 @@ class AIService:
         - Optimize for featured snippets
         {fun_mode_text}
         
-        Output format: Return ONLY the article content in Markdown format.
-        """
-        
-        chat = self._create_chat(system_message)
-        
-        prompt = f"""
         Write a comprehensive article with the following specifications:
         
         Title: {title}
@@ -81,14 +67,13 @@ class AIService:
         4. Practical tips or actionable advice
         5. Strong conclusion with a call-to-action
         
-        Remember to naturally incorporate the keywords for SEO optimization.
+        Return ONLY the article content in Markdown format.
         """
         
-        message = UserMessage(text=prompt)
-        content = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
+        content = response.text
         
         # Generate meta tags
-        meta_chat = self._create_chat("You are an SEO expert. Generate meta tags.")
         meta_prompt = f"""
         Based on this article title and content, generate:
         1. Meta Title (under 60 characters, include main keyword)
@@ -99,8 +84,8 @@ class AIService:
         
         Return as JSON: {{"meta_title": "...", "meta_description": "..."}}
         """
-        meta_message = UserMessage(text=meta_prompt)
-        meta_response = await meta_chat.send_message(meta_message)
+        
+        meta_response = self.model.generate_content(meta_prompt)
         
         # Parse meta response
         meta_title = title[:60]
@@ -108,8 +93,7 @@ class AIService:
         
         try:
             import json
-            # Try to extract JSON from response
-            json_match = re.search(r'\{[^}]+\}', meta_response)
+            json_match = re.search(r'\{[^}]+\}', meta_response.text)
             if json_match:
                 meta_data = json.loads(json_match.group())
                 meta_title = meta_data.get("meta_title", meta_title)
@@ -129,21 +113,16 @@ class AIService:
     async def generate_keywords(self, seed_keyword: str, count: int = 20) -> List[KeywordResult]:
         """Generate related keywords and long-tail variations"""
         
-        system_message = """
-        You are an SEO keyword research expert. Generate relevant keywords and long-tail variations.
-        For each keyword, estimate search volume (100-10000), difficulty (1-100), and relevance score (0.0-1.0).
-        """
-        
-        chat = self._create_chat(system_message)
-        
         prompt = f"""
-        Generate {count} SEO keywords related to: "{seed_keyword}"
+        You are an SEO keyword research expert. Generate {count} SEO keywords related to: "{seed_keyword}"
         
         Include:
         - Primary keywords (2-3 words)
         - Long-tail keywords (4-6 words)
         - Question-based keywords
         - LSI (Latent Semantic Indexing) keywords
+        
+        For each keyword, estimate search volume (100-10000), difficulty (1-100), and relevance score (0.0-1.0).
         
         Return as JSON array:
         [
@@ -157,14 +136,12 @@ class AIService:
         ]
         """
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
         
         keywords = []
         try:
             import json
-            # Extract JSON array from response
-            json_match = re.search(r'\[.*\]', response, re.DOTALL)
+            json_match = re.search(r'\[.*\]', response.text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
                 for item in data[:count]:
@@ -176,7 +153,6 @@ class AIService:
                         is_long_tail=item.get("is_long_tail", len(item.get("keyword", "").split()) > 3)
                     ))
         except Exception as e:
-            # Fallback: generate basic keywords
             keywords = [
                 KeywordResult(keyword=seed_keyword, search_volume=1000, difficulty=50, relevance_score=1.0),
                 KeywordResult(keyword=f"best {seed_keyword}", search_volume=800, difficulty=45, relevance_score=0.9),
@@ -188,15 +164,8 @@ class AIService:
     async def analyze_competitors(self, keyword: str, count: int = 5) -> dict:
         """Analyze SERP competitors and suggest content improvements"""
         
-        system_message = """
-        You are an SEO competitor analyst. Analyze what top-ranking content typically includes for a keyword
-        and provide actionable suggestions for creating better content.
-        """
-        
-        chat = self._create_chat(system_message)
-        
         prompt = f"""
-        For the keyword "{keyword}", analyze what top-ranking articles typically include:
+        You are an SEO competitor analyst. For the keyword "{keyword}", analyze what top-ranking articles typically include:
         
         1. Generate {count} hypothetical top SERP results with realistic titles and descriptions
         2. Identify common content structure and headings
@@ -215,13 +184,12 @@ class AIService:
                     "headings": ["H2: First Section", "H2: Second Section"]
                 }}
             ],
-            "suggested_outline": ["Introduction", "What is X", "Benefits of X", ...],
+            "suggested_outline": ["Introduction", "What is X", "Benefits of X"],
             "content_gaps": ["Gap 1", "Gap 2"]
         }}
         """
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
         
         results = []
         suggested_outline = []
@@ -229,7 +197,7 @@ class AIService:
         
         try:
             import json
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
                 for item in data.get("results", [])[:count]:
@@ -260,12 +228,6 @@ class AIService:
         keyword_count = content.lower().count(target_keyword.lower())
         keyword_density = (keyword_count / word_count * 100) if word_count > 0 else 0
         
-        system_message = """
-        You are an SEO analyst. Evaluate content for SEO optimization and provide actionable suggestions.
-        """
-        
-        chat = self._create_chat(system_message)
-        
         prompt = f"""
         Analyze this content for SEO optimization:
         
@@ -291,8 +253,7 @@ class AIService:
         }}
         """
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
         
         score = 70
         readability_score = 75
@@ -301,7 +262,7 @@ class AIService:
         
         try:
             import json
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
                 score = data.get("score", 70)
@@ -335,17 +296,12 @@ class AIService:
         - Include natural transitions
         """ if humanize else ""
         
-        system_message = f"""
-        You are a content rewriter. Rewrite content while maintaining SEO value and meaning.
+        prompt = f"""
+        You are a content rewriter. Rewrite the following content with a {tone.value} tone.
         {humanize_text}
         Preserve these keywords: {', '.join(preserve_keywords) if preserve_keywords else 'None specified'}
-        """
         
-        chat = self._create_chat(system_message)
-        
-        prompt = f"""
-        Rewrite the following content with a {tone.value} tone:
-        
+        Content to rewrite:
         {content}
         
         Requirements:
@@ -355,8 +311,8 @@ class AIService:
         - Return only the rewritten content
         """
         
-        message = UserMessage(text=prompt)
-        rewritten = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
+        rewritten = response.text
         
         return {
             "original_content": content,
@@ -370,13 +326,6 @@ class AIService:
     
     async def check_plagiarism(self, content: str) -> dict:
         """Check content for potential plagiarism/AI detection"""
-        
-        system_message = """
-        You are a content authenticity analyzer. Analyze content for patterns that might trigger AI detection
-        and suggest improvements for more natural, original writing.
-        """
-        
-        chat = self._create_chat(system_message)
         
         prompt = f"""
         Analyze this content for:
@@ -397,12 +346,11 @@ class AIService:
         }}
         """
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        response = self.model.generate_content(prompt)
         
         try:
             import json
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
         except:
