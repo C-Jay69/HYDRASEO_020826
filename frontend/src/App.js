@@ -124,6 +124,13 @@ function AppRoutes() {
       <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
       
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/articles" element={<AdminArticles />} />
+      <Route path="/admin/analytics" element={<AdminAnalytics />} />
+      
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
