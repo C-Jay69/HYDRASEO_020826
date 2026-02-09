@@ -765,6 +765,7 @@ app.include_router(ai_router)
 app.include_router(templates_router)
 app.include_router(analytics_router)
 app.include_router(calendar_router)
+app.include_router(admin_router)
 
 # CORS middleware
 app.add_middleware(
