@@ -34,6 +34,13 @@ import Rewrite from "./pages/Rewrite";
 import PricingPage from "./pages/PricingPage";
 import CalendarPage from "./pages/CalendarPage";
 
+// Admin Pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminArticles from "./pages/admin/AdminArticles";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
